@@ -1,0 +1,4 @@
+sphinx>=2
+sphinx-autobuild
+recommonmark
+m2r
