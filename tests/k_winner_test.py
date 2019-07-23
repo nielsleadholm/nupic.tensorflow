@@ -30,9 +30,6 @@ from tensorflow.python.platform import test
 from nupic.tensorflow.constraints import SparseWeights
 from nupic.tensorflow.layers import KWinners, KWinners2d
 
-
-# tf.enable_eager_execution()
-
 SEED = 18
 CUSTOM_OBJECTS = {
     "KWinners": KWinners,
