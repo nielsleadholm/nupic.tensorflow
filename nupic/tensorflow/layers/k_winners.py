@@ -300,17 +300,6 @@ class KWinners2d(KWinnersBase):
         config.update(super(KWinners2d, self).get_config())
         return config
 
-    def update_duty_cycle1(self, x):
-        batch_size = x.shape[0]
-        self.learning_iterations += batch_size
-
-        scale_factor = float(x.shape[2] * x.shape[3])
-        period = min(self.duty_cycle_period, self.learning_iterations)
-        self.duty_cycle.mul_(period - batch_size)
-        s = x.gt(0).sum(dim=(0, 2, 3), dtype=torch.float) / scale_factor
-        self.duty_cycle.reshape(-1).add_(s)
-        self.duty_cycle.div_(period)
-
     def update_duty_cycle(self, x):
         batch_size = tf.shape(x)[0]
         duty_cycles_shape = self.duty_cycles.shape
