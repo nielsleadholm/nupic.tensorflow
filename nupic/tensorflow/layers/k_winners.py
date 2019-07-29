@@ -285,6 +285,7 @@ class KWinners2d(KWinnersBase):
             shape=duty_cycles_shape,
             initializer=tf.zeros_initializer,
             trainable=False,
+            dtype=tf.float32,
         )
         self.n = int(np.prod(input_shape[1:]))
         self.k = int(round(self.n * self.percent_on))
@@ -392,6 +393,7 @@ class KWinners(KWinnersBase):
             shape=[self.n],
             initializer=tf.zeros_initializer,
             trainable=False,
+            dtype=tf.float32,
         )
 
     def update_duty_cycle(self, inputs):
