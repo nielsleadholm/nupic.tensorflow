@@ -77,7 +77,6 @@ def compute_kwinners(x, k, duty_cycles, boost_strength):
     :return:
         A tensor representing the activity of x after k-winner take all.
     """
-    x = tf.cast(x, tf.float32)
     k = tf.convert_to_tensor(k, dtype=tf.int32)
     boost_strength = tf.math.maximum(boost_strength, 0.0)
     input_shape = tf.shape(x)
