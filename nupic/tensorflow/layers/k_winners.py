@@ -150,6 +150,7 @@ class KWinnersBase(keras.layers.Layer, metaclass=abc.ABCMeta):
         self.percent_on = percent_on
         self.percent_on_inference = percent_on * k_inference_factor
         self.k_inference_factor = k_inference_factor
+        self.learning_iterations = None
         self.n = 0
         self.k = 0
         self.k_inference = 0
