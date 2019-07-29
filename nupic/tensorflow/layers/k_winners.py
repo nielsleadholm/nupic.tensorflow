@@ -277,7 +277,7 @@ class KWinners2d(KWinnersBase):
         super(KWinners2d, self).build(input_shape=input_shape)
         self.channels = input_shape[self.channel_axis]
 
-        duty_cycles_shape = [tf.Dimension(1)] * 4
+        duty_cycles_shape = [tf.compat.v1.Dimension(1)] * 4
         duty_cycles_shape[self.channel_axis] = self.channels
         self.duty_cycles = self.add_variable(
             name="duty_cycles",
