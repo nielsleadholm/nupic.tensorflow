@@ -308,7 +308,7 @@ class KWinners2d(KWinnersBase):
         self.learning_iterations += batch_size
         period = tf.minimum(self.duty_cycle_period, self.learning_iterations)
         # Scale all dims but the channel dim
-        axis = [0, self.channel_axis, self.height_axis, self.width_axis]
+        axis = [0, self.height_axis, self.width_axis]
         count = tf.reduce_sum(tf.cast(x > 0, tf.float32), axis=axis) / self.scale_factor
         duty_cycles = self.duty_cycles * tf.cast(period - batch_size, tf.float32)
         # Flatten and add sum
