@@ -297,14 +297,12 @@ class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
 
             kw = KWinners(**kwargs)
             kw.build(input_shape=x.shape)
-            # print(kw.learning_iterations, kw.duty_cycles)
+
             result = kw(x, training=False)
             self.assertAllEqual(result, expected)
-            # print(kw.learning_iterations, kw.duty_cycles)
 
             result = kw(x, training=False)
             # self.assertAllEqual(result, expected)
-            # print(kw.learning_iterations, kw.duty_cycles)
 
             expected = np.zeros(x.shape, dtype=np.float32)
             expected[0, 0] = 1.5
