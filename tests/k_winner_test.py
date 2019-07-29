@@ -127,7 +127,7 @@ class KWinnersFowardTest(KWinnersTestBase, keras_parameterized.TestCase):
         for b in np.arange(0.0, 10.0, dtype=np.float32):
 
             # Build layer with varying boost_strength.
-            result = compute_kwinners(x, 3, duty_cycles, boost_strength=0.0)
+            result = compute_kwinners(x, 3, duty_cycles, boost_strength=b)
             self.assertAllEqual(result, expected)
 
     def test_two(self):
