@@ -150,7 +150,7 @@ class KWinnersBase(keras.layers.Layer, metaclass=abc.ABCMeta):
         self.percent_on = percent_on
         self.percent_on_inference = percent_on * k_inference_factor
         self.k_inference_factor = k_inference_factor
-        self.learning_iterations = 0
+        self.learning_iterations = None
         self.n = 0
         self.k = 0
         self.k_inference = 0
@@ -160,6 +160,20 @@ class KWinnersBase(keras.layers.Layer, metaclass=abc.ABCMeta):
         self.boost_strength_factor = boost_strength_factor
         self.duty_cycle_period = duty_cycle_period
         self.duty_cycles = None
+
+    def build(self, input_shape):
+        """
+        Build variable independent of the input shape.
+        """
+        super().build(input_shape=input_shape)
+
+        self.learning_iterations = self.add_variable(
+            name="learning_iterations",
+            shape=[],
+            initializer=tf.zeros_initializer,
+            trainable=False,
+            dtype=tf.int32,
+        )
 
     def get_config(self):
         config = {
@@ -277,13 +291,14 @@ class KWinners2d(KWinnersBase):
         super(KWinners2d, self).build(input_shape=input_shape)
         self.channels = input_shape[self.channel_axis]
 
-        duty_cycles_shape = [tf.Dimension(1)] * 4
+        duty_cycles_shape = [tf.compat.v1.Dimension(1)] * 4
         duty_cycles_shape[self.channel_axis] = self.channels
         self.duty_cycles = self.add_variable(
             name="duty_cycles",
             shape=duty_cycles_shape,
             initializer=tf.zeros_initializer,
             trainable=False,
+            dtype=tf.float32,
         )
         self.n = int(np.prod(input_shape[1:]))
         self.k = int(round(self.n * self.percent_on))
@@ -303,10 +318,10 @@ class KWinners2d(KWinnersBase):
     def update_duty_cycle(self, x):
         batch_size = tf.shape(x)[0]
         duty_cycles_shape = self.duty_cycles.shape
-        self.learning_iterations += batch_size
-        period = tf.minimum(self.duty_cycle_period, self.learning_iterations)
+        learning_iterations = self.learning_iterations.assign_add(batch_size)
+        period = tf.minimum(self.duty_cycle_period, learning_iterations)
         # Scale all dims but the channel dim
-        axis = [0, self.channel_axis, self.height_axis, self.width_axis]
+        axis = [0, self.height_axis, self.width_axis]
         count = tf.reduce_sum(tf.cast(x > 0, tf.float32), axis=axis) / self.scale_factor
         duty_cycles = self.duty_cycles * tf.cast(period - batch_size, tf.float32)
         # Flatten and add sum
@@ -325,9 +340,14 @@ class KWinners2d(KWinnersBase):
             duty_cycles=self.duty_cycles,
             boost_strength=self.boost_strength,
         )
-        self.duty_cycles.assign(keras.backend.in_train_phase(
-            self.update_duty_cycle(kwinners), self.duty_cycles, training=training
-        ))
+        self.add_update(lambda: tf.compat.v1.assign(
+            self.duty_cycles,
+            keras.backend.in_train_phase(
+                x=lambda: self.update_duty_cycle(kwinners),
+                alt=self.duty_cycles,
+                training=training
+            ))
+        )
         return kwinners
 
 
@@ -391,6 +411,7 @@ class KWinners(KWinnersBase):
             shape=[self.n],
             initializer=tf.zeros_initializer,
             trainable=False,
+            dtype=tf.float32,
         )
 
     def update_duty_cycle(self, inputs):
@@ -401,8 +422,8 @@ class KWinners(KWinnersBase):
 
         """
         batch_size = tf.shape(inputs)[0]
-        self.learning_iterations += batch_size
-        period = tf.minimum(self.duty_cycle_period, self.learning_iterations)
+        learning_iterations = self.learning_iterations.assign_add(batch_size)
+        period = tf.minimum(self.duty_cycle_period, learning_iterations)
         count = tf.reduce_sum(tf.cast(inputs > 0, tf.float32), axis=0)
         result = self.duty_cycles * tf.cast(period - batch_size, tf.float32) + count
         return result / tf.cast(period, tf.float32)
@@ -417,7 +438,13 @@ class KWinners(KWinnersBase):
             duty_cycles=self.duty_cycles,
             boost_strength=self.boost_strength,
         )
-        self.duty_cycles.assign(keras.backend.in_train_phase(
-            x=self.update_duty_cycle(kwinners), alt=self.duty_cycles, training=training
-        ))
+
+        self.add_update(lambda: tf.compat.v1.assign(
+            self.duty_cycles,
+            keras.backend.in_train_phase(
+                x=lambda: self.update_duty_cycle(kwinners),
+                alt=self.duty_cycles,
+                training=training
+            ))
+        )
         return kwinners
