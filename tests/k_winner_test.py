@@ -197,9 +197,9 @@ class KWinnersFowardTest(KWinnersTestBase, keras_parameterized.TestCase):
         result = compute_kwinners(x, 2, duty_cycles, boost_strength=0.0)
         self.assertAllEqual(result, expected)
 
-        # Test forward again with boost factor from 1 to 10. Should yield the same result
-        # as the negative numbers will never be in the top k and the non-one values
-        # have very large duty cycles.
+        # Test forward again with boost factor from 1 to 10. Should yield the same
+        # result as the negative numbers will never be in the top k and the non-one
+        # values have very large duty cycles.
         expected = np.zeros(x.shape, dtype=np.float32)
         expected[0, 0] = 1.0
         expected[0, 3] = 1.0
