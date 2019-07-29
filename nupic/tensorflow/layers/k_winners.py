@@ -318,8 +318,8 @@ class KWinners2d(KWinnersBase):
     def update_duty_cycle(self, x):
         batch_size = tf.shape(x)[0]
         duty_cycles_shape = self.duty_cycles.shape
-        self.learning_iterations.assign_add(batch_size)
-        period = tf.minimum(self.duty_cycle_period, self.learning_iterations)
+        learning_iterations = self.learning_iterations.assign_add(batch_size)
+        period = tf.minimum(self.duty_cycle_period, learning_iterations)
         # Scale all dims but the channel dim
         axis = [0, self.height_axis, self.width_axis]
         count = tf.reduce_sum(tf.cast(x > 0, tf.float32), axis=axis) / self.scale_factor
@@ -422,8 +422,8 @@ class KWinners(KWinnersBase):
 
         """
         batch_size = tf.shape(inputs)[0]
-        self.learning_iterations.assign_add(batch_size)
-        period = tf.minimum(self.duty_cycle_period, self.learning_iterations)
+        learning_iterations = self.learning_iterations.assign_add(batch_size)
+        period = tf.minimum(self.duty_cycle_period, learning_iterations)
         count = tf.reduce_sum(tf.cast(inputs > 0, tf.float32), axis=0)
         result = self.duty_cycles * tf.cast(period - batch_size, tf.float32) + count
         return result / tf.cast(period, tf.float32)
