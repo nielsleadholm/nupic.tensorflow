@@ -23,6 +23,7 @@ import abc
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.python.keras.utils import tf_utils
 
 
 def compute_kwinners(x, k, duty_cycles, boost_strength):
@@ -340,14 +341,13 @@ class KWinners2d(KWinnersBase):
             duty_cycles=self.duty_cycles,
             boost_strength=self.boost_strength,
         )
-        self.add_update(lambda: tf.compat.v1.assign(
-            self.duty_cycles,
-            keras.backend.in_train_phase(
-                x=lambda: self.update_duty_cycle(kwinners),
-                alt=self.duty_cycles,
-                training=training
-            ))
-        )
+        if training is None:
+            training = keras.backend.learning_phase()
+
+        if tf_utils.constant_value(training) is not False:
+            self.add_update(
+                lambda: self.duty_cycles.assign(self.update_duty_cycle(kwinners)))
+
         return kwinners
 
 
@@ -439,12 +439,11 @@ class KWinners(KWinnersBase):
             boost_strength=self.boost_strength,
         )
 
-        self.add_update(lambda: tf.compat.v1.assign(
-            self.duty_cycles,
-            keras.backend.in_train_phase(
-                x=lambda: self.update_duty_cycle(kwinners),
-                alt=self.duty_cycles,
-                training=training
-            ))
-        )
+        if training is None:
+            training = keras.backend.learning_phase()
+
+        if tf_utils.constant_value(training) is not False:
+            self.add_update(
+                lambda: self.duty_cycles.assign(self.update_duty_cycle(kwinners)))
+
         return kwinners
