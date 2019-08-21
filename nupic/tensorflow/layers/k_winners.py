@@ -23,7 +23,7 @@ import abc
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.python.keras.utils import tf_utils
+from tensorflow.python.keras import backend as K
 
 
 def compute_kwinners(x, k, duty_cycles, boost_strength):
@@ -243,7 +243,7 @@ class KWinners2d(KWinnersBase):
     :type duty_cycle_period: int
 
     :param data_format:
-        one of `channels_first` (default) or `channels_last`. The ordering of
+        one of `channels_first` or `channels_last`. The ordering of
         the dimensions in the inputs. `channels_last` corresponds to inputs with
         shape `(batch, height, width, channels)` while `channels_first` corresponds
         to inputs with shape `(batch, channels, height, width)`.
@@ -262,7 +262,7 @@ class KWinners2d(KWinnersBase):
         boost_strength=1.0,
         boost_strength_factor=0.9,
         duty_cycle_period=1000,
-        data_format="channel_first",
+        data_format=K.image_data_format(),
         name=None,
         **kwargs,
     ):
@@ -276,16 +276,16 @@ class KWinners2d(KWinnersBase):
             **kwargs,
         )
         self.data_format = data_format
-        if self.data_format == "channel_first":
+        if self.data_format == "channels_first":
             # (batch, channels, height, width)
             self.channel_axis = 1
             self.height_axis = 2
             self.width_axis = 3
         else:
             # (batch, height, width, channels)
-            self.channel_axis = 3
             self.height_axis = 1
             self.width_axis = 2
+            self.channel_axis = 3
 
         # Not know until `build`
         self.channels = None
@@ -295,7 +295,7 @@ class KWinners2d(KWinnersBase):
         super(KWinners2d, self).build(input_shape=input_shape)
         self.channels = input_shape[self.channel_axis]
 
-        duty_cycles_shape = [tf.compat.v1.Dimension(1)] * 4
+        duty_cycles_shape = [1] * 4
         duty_cycles_shape[self.channel_axis] = self.channels
         self.duty_cycles = self.add_variable(
             name="duty_cycles",
