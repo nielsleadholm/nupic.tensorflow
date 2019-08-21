@@ -145,9 +145,10 @@ class KWinnersBase(keras.layers.Layer, metaclass=abc.ABCMeta):
         boost_strength,
         boost_strength_factor,
         duty_cycle_period,
+        name=None,
         **kwargs,
     ):
-        super(KWinnersBase, self).__init__(**kwargs)
+        super(KWinnersBase, self).__init__(name=name, **kwargs)
         self.percent_on = percent_on
         self.percent_on_inference = percent_on * k_inference_factor
         self.k_inference_factor = k_inference_factor
@@ -262,6 +263,7 @@ class KWinners2d(KWinnersBase):
         boost_strength_factor=0.9,
         duty_cycle_period=1000,
         data_format="channel_first",
+        name=None,
         **kwargs,
     ):
         super(KWinners2d, self).__init__(
@@ -270,6 +272,7 @@ class KWinners2d(KWinnersBase):
             boost_strength=boost_strength,
             boost_strength_factor=boost_strength_factor,
             duty_cycle_period=duty_cycle_period,
+            name=name,
             **kwargs,
         )
         self.data_format = data_format
@@ -389,6 +392,7 @@ class KWinners(KWinnersBase):
         boost_strength=1.0,
         boost_strength_factor=1.0,
         duty_cycle_period=1000,
+        name=None,
         **kwargs,
     ):
         super(KWinners, self).__init__(
@@ -397,6 +401,7 @@ class KWinners(KWinnersBase):
             boost_strength=boost_strength,
             boost_strength_factor=boost_strength_factor,
             duty_cycle_period=duty_cycle_period,
+            name=name,
             **kwargs,
         )
 
