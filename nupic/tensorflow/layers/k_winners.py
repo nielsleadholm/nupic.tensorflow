@@ -189,7 +189,7 @@ class KWinnersBase(keras.layers.Layer, metaclass=abc.ABCMeta):
         config = {
             "percent_on": self.percent_on,
             "k_inference_factor": self.k_inference_factor,
-            "boost_strength": self.boost_strength,
+            "boost_strength": K.get_value(self.boost_strength),
             "boost_strength_factor": self.boost_strength_factor,
             "duty_cycle_period": self.duty_cycle_period,
         }
@@ -462,7 +462,7 @@ class KWinners(KWinnersBase):
             x=inputs,
             k=k,
             duty_cycles=self.duty_cycles,
-            boost_strength=self.boost_strength,
+            boost_strength=K.get_value(self.boost_strength),
         )
 
         duty_cycles = K.in_train_phase(lambda: self.compute_duty_cycle(kwinners),
