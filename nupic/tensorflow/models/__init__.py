@@ -17,6 +17,4 @@
 #
 #  http://numenta.org/licenses/
 #
-from .sparse_cnn import (
-    GSCSparseCNN, GSCSuperSparseCNN,
-)
+from .sparse_cnn import GSCSparseCNN, GSCSuperSparseCNN

@@ -27,6 +27,7 @@ from tensorflow.python.keras.utils import get_file
 from nupic.tensorflow.constraints import SparseWeights
 from nupic.tensorflow.layers import KWinners, KWinners2d
 
+IMAGE_DATA_FORMAT = K.image_data_format()
 
 MODEL_URLS = {
     "gsc_sparse_cnn": (
@@ -77,7 +78,7 @@ class GSCSparseCNN(keras.Sequential):
         boost_strength_factor=0.9,
         k_inference_factor=1.5,
         duty_cycle_period=1000,
-        data_format=K.image_data_format(),
+        data_format=IMAGE_DATA_FORMAT,
         pre_trained=False,
         **kwargs,
     ):
@@ -182,7 +183,7 @@ class GSCSparseCNN(keras.Sequential):
                                     origin=model_url,
                                     file_hash=model_hash,
                                     extract=True,
-                                    cache_subdir='models')
+                                    cache_subdir="models")
             cache_dir = os.path.dirname(archive_path)
             self.load_weights(os.path.join(cache_dir, "gsc_sparse_cnn.h5"))
 
@@ -196,7 +197,7 @@ class GSCSuperSparseCNN(GSCSparseCNN):
 
     """
 
-    def __init__(self, data_format=K.image_data_format(), pre_trained=False):
+    def __init__(self, data_format=IMAGE_DATA_FORMAT, pre_trained=False):
         super(GSCSuperSparseCNN, self).__init__(
             linear_units=1500,
             linear_percent_on=0.067,
@@ -211,6 +212,6 @@ class GSCSuperSparseCNN(GSCSparseCNN):
                                     origin=model_url,
                                     file_hash=model_hash,
                                     extract=True,
-                                    cache_subdir='models')
+                                    cache_subdir="models")
             cache_dir = os.path.dirname(archive_path)
             self.load_weights(os.path.join(cache_dir, "gsc_super_sparse_cnn.h5"))

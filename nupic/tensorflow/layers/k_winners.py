@@ -25,6 +25,8 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.python.keras import backend as K
 
+IMAGE_DATA_FORMAT = K.image_data_format()
+
 
 def compute_kwinners(x, k, duty_cycles, boost_strength):
     r"""
@@ -221,7 +223,6 @@ class KWinnersBase(keras.layers.Layer, metaclass=abc.ABCMeta):
             self.boost_strength.assign(self.boost_strength * factor,
                                        read_value=False))
 
-
     def call(self, inputs, **kwargs):
         inputs = super().call(inputs, **kwargs)
         # FIXME: In eager mode, predict_on_batch method is called with list of inputs
@@ -277,7 +278,7 @@ class KWinners2d(KWinnersBase):
         boost_strength=1.0,
         boost_strength_factor=0.9,
         duty_cycle_period=1000,
-        data_format=K.image_data_format(),
+        data_format=IMAGE_DATA_FORMAT,
         name=None,
         **kwargs,
     ):
