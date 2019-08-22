@@ -17,10 +17,25 @@
 #
 #  http://numenta.org/licenses/
 #
-from nupic.tensorflow.constraints import SparseWeights
-from nupic.tensorflow.layers import KWinners, KWinners2d
+
+import os
+
 from tensorflow import keras
 from tensorflow.python.keras import backend as K
+from tensorflow.python.keras.utils import get_file
+
+from nupic.tensorflow.constraints import SparseWeights
+from nupic.tensorflow.layers import KWinners, KWinners2d
+
+
+MODEL_URLS = {
+    "gsc_sparse_cnn": (
+        "http://public.numenta.com/tensorflow/hub/gsc_sparse_cnn-d82adc4e.tar.gz",
+        "d82adc4ea148d90347f4715976072797"),
+    "gsc_super_sparse_cnn": (
+        "http://public.numenta.com/tensorflow/hub/gsc_super_sparse_cnn-63d83520.tar.gz",
+        "63d835206055ab03c2e3160b4ec5565b"),
+}
 
 
 class GSCSparseCNN(keras.Sequential):
@@ -48,6 +63,7 @@ class GSCSparseCNN(keras.Sequential):
         shape `(batch, height, width, channels)` while `channels_first` corresponds
         to inputs with shape `(batch, channels, height, width)`.
         Similar to `data_format` argument in :class:`keras.layers.Conv2D`.
+    :param pre_trained: Whether or not to create a pre-trained model
     """
 
     def __init__(
@@ -62,6 +78,7 @@ class GSCSparseCNN(keras.Sequential):
         k_inference_factor=1.5,
         duty_cycle_period=1000,
         data_format=K.image_data_format(),
+        pre_trained=False,
         **kwargs,
     ):
         super(GSCSparseCNN, self).__init__(**kwargs)
@@ -158,6 +175,17 @@ class GSCSparseCNN(keras.Sequential):
         self.add(keras.layers.Dense(name="output", units=12))
         self.add(keras.layers.Softmax(axis=1))
 
+        if pre_trained:
+            model_url, model_hash = MODEL_URLS["gsc_sparse_cnn"]
+            file_name = "gsc_sparse_cnn-{:.8}".format(model_hash)
+            archive_path = get_file(fname="{}.tar.gz".format(file_name),
+                                    origin=model_url,
+                                    file_hash=model_hash,
+                                    extract=True,
+                                    cache_subdir='models')
+            cache_dir = os.path.dirname(archive_path)
+            self.load_weights(os.path.join(cache_dir, "gsc_sparse_cnn.h5"))
+
 
 class GSCSuperSparseCNN(GSCSparseCNN):
     """Super Sparse CNN model used to classify `Google Speech Commands`
@@ -168,10 +196,21 @@ class GSCSuperSparseCNN(GSCSparseCNN):
 
     """
 
-    def __init__(self, data_format=K.image_data_format()):
+    def __init__(self, data_format=K.image_data_format(), pre_trained=False):
         super(GSCSuperSparseCNN, self).__init__(
             linear_units=1500,
             linear_percent_on=0.067,
             linear_weight_sparsity=0.1,
             data_format=data_format,
+            pre_trained=False,
         )
+        if pre_trained:
+            model_url, model_hash = MODEL_URLS["gsc_super_sparse_cnn"]
+            file_name = "gsc_super_sparse_cnn-{:.8}".format(model_hash)
+            archive_path = get_file(fname="{}.tar.gz".format(file_name),
+                                    origin=model_url,
+                                    file_hash=model_hash,
+                                    extract=True,
+                                    cache_subdir='models')
+            cache_dir = os.path.dirname(archive_path)
+            self.load_weights(os.path.join(cache_dir, "gsc_super_sparse_cnn.h5"))
