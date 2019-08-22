@@ -19,6 +19,7 @@
 #
 
 import random
+import unittest
 
 import numpy as np
 import tensorflow as tf
@@ -521,6 +522,7 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
                                      input_data=x,
                                      expected_output=expected)
 
+    @unittest.skip("FIXME: Enable once training is fully implemented")
     @keras_parameterized.run_all_keras_modes
     def test_five(self):
         """
