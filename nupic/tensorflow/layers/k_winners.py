@@ -104,8 +104,7 @@ def compute_kwinners(x, k, duty_cycles, boost_strength):
     full_indices = tf.reshape(full_indices, [-1, 2])
 
     updates = tf.gather_nd(params=flat_x, indices=full_indices)
-    res = tf.scatter_nd(indices=full_indices, updates=updates,
-                        shape=tf.shape(flat_x))
+    res = tf.scatter_nd(indices=full_indices, updates=updates, shape=tf.shape(flat_x))
     return tf.reshape(res, input_shape)
 
 
@@ -218,10 +217,10 @@ class KWinnersBase(keras.layers.Layer, metaclass=abc.ABCMeta):
         """
         Update boost strength using given strength factor during training.
         """
-        factor = K.in_train_phase(self.boost_strength_factor, 1.)
+        factor = K.in_train_phase(self.boost_strength_factor, 1.0)
         self.add_update(
-            self.boost_strength.assign(self.boost_strength * factor,
-                                       read_value=False))
+            self.boost_strength.assign(self.boost_strength * factor, read_value=False)
+        )
 
     def call(self, inputs, **kwargs):
         inputs = super().call(inputs, **kwargs)
@@ -330,8 +329,7 @@ class KWinners2d(KWinnersBase):
         self.scale_factor = float(np.prod(shape))
 
     def get_config(self):
-        config = {
-            "data_format": self.data_format}
+        config = {"data_format": self.data_format}
         config.update(super(KWinners2d, self).get_config())
         return config
 
@@ -354,9 +352,7 @@ class KWinners2d(KWinnersBase):
 
     def call(self, inputs, training=None, **kwargs):
         inputs = super().call(inputs, **kwargs)
-        k = K.in_test_phase(
-            x=self.k_inference, alt=self.k, training=training
-        )
+        k = K.in_test_phase(x=self.k_inference, alt=self.k, training=training)
         kwinners = compute_kwinners(
             x=inputs,
             k=k,
@@ -364,13 +360,16 @@ class KWinners2d(KWinnersBase):
             boost_strength=self.boost_strength,
         )
 
-        duty_cycles = K.in_train_phase(lambda: self.compute_duty_cycle(kwinners),
-                                       self.duty_cycles, training=training)
-        self.add_update(
-            self.duty_cycles.assign(duty_cycles, read_value=False))
+        duty_cycles = K.in_train_phase(
+            lambda: self.compute_duty_cycle(kwinners),
+            self.duty_cycles,
+            training=training,
+        )
+        self.add_update(self.duty_cycles.assign(duty_cycles, read_value=False))
         increment = K.in_train_phase(K.shape(inputs)[0], 0, training=training)
         self.add_update(
-            self.learning_iterations.assign_add(increment, read_value=False))
+            self.learning_iterations.assign_add(increment, read_value=False)
+        )
 
         return kwinners
 
@@ -455,9 +454,7 @@ class KWinners(KWinnersBase):
 
     def call(self, inputs, training=None, **kwargs):
         inputs = super().call(inputs, **kwargs)
-        k = K.in_test_phase(
-            x=self.k_inference, alt=self.k, training=training
-        )
+        k = K.in_test_phase(x=self.k_inference, alt=self.k, training=training)
         kwinners = compute_kwinners(
             x=inputs,
             k=k,
@@ -465,13 +462,16 @@ class KWinners(KWinnersBase):
             boost_strength=K.get_value(self.boost_strength),
         )
 
-        duty_cycles = K.in_train_phase(lambda: self.compute_duty_cycle(kwinners),
-                                       self.duty_cycles, training=training)
-        self.add_update(
-            self.duty_cycles.assign(duty_cycles, read_value=False))
+        duty_cycles = K.in_train_phase(
+            lambda: self.compute_duty_cycle(kwinners),
+            self.duty_cycles,
+            training=training,
+        )
+        self.add_update(self.duty_cycles.assign(duty_cycles, read_value=False))
 
         increment = K.in_train_phase(K.shape(inputs)[0], 0, training=training)
         self.add_update(
-            self.learning_iterations.assign_add(increment, read_value=False))
+            self.learning_iterations.assign_add(increment, read_value=False)
+        )
 
         return kwinners

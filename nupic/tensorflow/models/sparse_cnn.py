@@ -32,10 +32,12 @@ IMAGE_DATA_FORMAT = K.image_data_format()
 MODEL_URLS = {
     "gsc_sparse_cnn": (
         "http://public.numenta.com/tensorflow/hub/gsc_sparse_cnn-d82adc4e.tar.gz",
-        "d82adc4ea148d90347f4715976072797"),
+        "d82adc4ea148d90347f4715976072797",
+    ),
     "gsc_super_sparse_cnn": (
         "http://public.numenta.com/tensorflow/hub/gsc_super_sparse_cnn-63d83520.tar.gz",
-        "63d835206055ab03c2e3160b4ec5565b"),
+        "63d835206055ab03c2e3160b4ec5565b",
+    ),
 }
 
 
@@ -100,16 +102,24 @@ class GSCSparseCNN(keras.Sequential):
                 kernel_size=5,
             )
         )
-        self.add(keras.layers.BatchNormalization(name="cnn1_batchnorm",
-                                                 axis=axis,
-                                                 epsilon=1e-05,
-                                                 momentum=0.9,
-                                                 center=False,
-                                                 scale=False))
-        self.add(keras.layers.MaxPool2D(name="cnn1_maxpool",
-                                        pool_size=2,
-                                        padding="same",
-                                        data_format=data_format))
+        self.add(
+            keras.layers.BatchNormalization(
+                name="cnn1_batchnorm",
+                axis=axis,
+                epsilon=1e-05,
+                momentum=0.9,
+                center=False,
+                scale=False,
+            )
+        )
+        self.add(
+            keras.layers.MaxPool2D(
+                name="cnn1_maxpool",
+                pool_size=2,
+                padding="same",
+                data_format=data_format,
+            )
+        )
         self.add(
             KWinners2d(
                 name="cnn1_kwinner",
@@ -129,16 +139,24 @@ class GSCSparseCNN(keras.Sequential):
                 kernel_size=5,
             )
         )
-        self.add(keras.layers.BatchNormalization(name="cnn2_batchnorm",
-                                                 axis=axis,
-                                                 epsilon=1e-05,
-                                                 momentum=0.9,
-                                                 center=False,
-                                                 scale=False))
-        self.add(keras.layers.MaxPool2D(name="cnn2_maxpool",
-                                        pool_size=2,
-                                        padding="same",
-                                        data_format=data_format))
+        self.add(
+            keras.layers.BatchNormalization(
+                name="cnn2_batchnorm",
+                axis=axis,
+                epsilon=1e-05,
+                momentum=0.9,
+                center=False,
+                scale=False,
+            )
+        )
+        self.add(
+            keras.layers.MaxPool2D(
+                name="cnn2_maxpool",
+                pool_size=2,
+                padding="same",
+                data_format=data_format,
+            )
+        )
         self.add(
             KWinners2d(
                 name="cnn2_kwinner",
@@ -158,11 +176,11 @@ class GSCSparseCNN(keras.Sequential):
                 kernel_constraint=SparseWeights(linear_weight_sparsity),
             )
         )
-        self.add(keras.layers.BatchNormalization(name="linear_bn",
-                                                 epsilon=1e-05,
-                                                 momentum=0.9,
-                                                 center=False,
-                                                 scale=False))
+        self.add(
+            keras.layers.BatchNormalization(
+                name="linear_bn", epsilon=1e-05, momentum=0.9, center=False, scale=False
+            )
+        )
         self.add(
             KWinners(
                 name="linear_kwinner",
@@ -179,11 +197,13 @@ class GSCSparseCNN(keras.Sequential):
         if pre_trained:
             model_url, model_hash = MODEL_URLS["gsc_sparse_cnn"]
             file_name = "gsc_sparse_cnn-{:.8}".format(model_hash)
-            archive_path = get_file(fname="{}.tar.gz".format(file_name),
-                                    origin=model_url,
-                                    file_hash=model_hash,
-                                    extract=True,
-                                    cache_subdir="models")
+            archive_path = get_file(
+                fname="{}.tar.gz".format(file_name),
+                origin=model_url,
+                file_hash=model_hash,
+                extract=True,
+                cache_subdir="models",
+            )
             cache_dir = os.path.dirname(archive_path)
             self.load_weights(os.path.join(cache_dir, "gsc_sparse_cnn.h5"))
 
@@ -208,10 +228,12 @@ class GSCSuperSparseCNN(GSCSparseCNN):
         if pre_trained:
             model_url, model_hash = MODEL_URLS["gsc_super_sparse_cnn"]
             file_name = "gsc_super_sparse_cnn-{:.8}".format(model_hash)
-            archive_path = get_file(fname="{}.tar.gz".format(file_name),
-                                    origin=model_url,
-                                    file_hash=model_hash,
-                                    extract=True,
-                                    cache_subdir="models")
+            archive_path = get_file(
+                fname="{}.tar.gz".format(file_name),
+                origin=model_url,
+                file_hash=model_hash,
+                extract=True,
+                cache_subdir="models",
+            )
             cache_dir = os.path.dirname(archive_path)
             self.load_weights(os.path.join(cache_dir, "gsc_super_sparse_cnn.h5"))

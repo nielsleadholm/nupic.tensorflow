@@ -19,7 +19,6 @@
 #
 
 import random
-import unittest
 
 import numpy as np
 import tensorflow as tf
@@ -31,7 +30,6 @@ from tensorflow.python.training import gradient_descent
 from nupic.tensorflow.constraints import SparseWeights
 from nupic.tensorflow.layers import KWinners, KWinners2d
 from nupic.tensorflow.layers.k_winners import compute_kwinners
-
 
 SEED = 18
 CUSTOM_OBJECTS = {
@@ -286,11 +284,13 @@ class KWinnersFowardTest(KWinnersTestBase, keras_parameterized.TestCase):
         expected2[1, 1] = x[1, 1]
         expected2[1, 3] = x[1, 3]
         expected2[1, 5] = x[1, 5]
-        result = compute_kwinners(x, k=3, duty_cycles=self.duty_cycles2,
-                                  boost_strength=1.0)
+        result = compute_kwinners(
+            x, k=3, duty_cycles=self.duty_cycles2, boost_strength=1.0
+        )
         result = keras.backend.get_value(result)
-        self.assertTrue(np.array_equal(result, expected1) or
-                        np.array_equal(result, expected2))
+        self.assertTrue(
+            np.array_equal(result, expected1) or np.array_equal(result, expected2)
+        )
 
 
 class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
@@ -319,11 +319,9 @@ class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
 
         # Use testing utils to validate layer functionality.
         with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
-            testing_utils.layer_test(KWinners,
-                                     kwargs=kwargs,
-                                     input_data=x,
-                                     expected_output=expected,
-                                     )
+            testing_utils.layer_test(
+                KWinners, kwargs=kwargs, input_data=x, expected_output=expected
+            )
 
     @keras_parameterized.run_all_keras_modes
     def test_two(self):
@@ -341,17 +339,19 @@ class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
         with self.cached_session():
             # Compile model. Results should be independent on the loss and optimizer.
             model = keras.models.Sequential()
-            kw = KWinners(percent_on=0.333,
-                          k_inference_factor=1.5,
-                          boost_strength=1.0,
-                          boost_strength_factor=0.5,
-                          duty_cycle_period=1000,
-                          )
+            kw = KWinners(
+                percent_on=0.333,
+                k_inference_factor=1.5,
+                boost_strength=1.0,
+                boost_strength_factor=0.5,
+                duty_cycle_period=1000,
+            )
             model.add(kw)
             model.compile(
                 loss="mse",
                 optimizer=gradient_descent.GradientDescentOptimizer(0.01),
-                run_eagerly=testing_utils.should_run_eagerly())
+                run_eagerly=testing_utils.should_run_eagerly(),
+            )
 
             # Ensure there are zero trainable parameters.
             layer = model.layers[0]
@@ -411,12 +411,14 @@ class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
                 k_inference_factor=1.5,
                 boost_strength=1.0,
                 boost_strength_factor=0.5,
-                duty_cycle_period=1000)
+                duty_cycle_period=1000,
+            )
             model.add(kw)
             model.compile(
                 loss="mse",
                 optimizer=gradient_descent.GradientDescentOptimizer(0.01),
-                run_eagerly=testing_utils.should_run_eagerly())
+                run_eagerly=testing_utils.should_run_eagerly(),
+            )
 
             # Ensure there are zero trainable parameters.
             layer = model.layers[0]
@@ -499,10 +501,9 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
             "data_format": "channels_first",
         }
         with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
-            testing_utils.layer_test(KWinners2d,
-                                     kwargs=kwargs,
-                                     input_data=x,
-                                     expected_output=expected)
+            testing_utils.layer_test(
+                KWinners2d, kwargs=kwargs, input_data=x, expected_output=expected
+            )
 
     @keras_parameterized.run_all_keras_modes
     def test_two(self):
@@ -521,10 +522,9 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
         }
 
         with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
-            testing_utils.layer_test(KWinners2d,
-                                     kwargs=kwargs,
-                                     input_data=x,
-                                     expected_output=expected)
+            testing_utils.layer_test(
+                KWinners2d, kwargs=kwargs, input_data=x, expected_output=expected
+            )
 
     @keras_parameterized.run_all_keras_modes
     def test_three(self):
@@ -548,10 +548,9 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
             "data_format": "channels_first",
         }
         with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
-            testing_utils.layer_test(KWinners2d,
-                                     kwargs=kwargs,
-                                     input_data=x,
-                                     expected_output=expected)
+            testing_utils.layer_test(
+                KWinners2d, kwargs=kwargs, input_data=x, expected_output=expected
+            )
 
     @keras_parameterized.run_all_keras_modes
     def test_four(self):
@@ -573,10 +572,9 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
             "data_format": "channels_first",
         }
         with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
-            testing_utils.layer_test(KWinners2d,
-                                     kwargs=kwargs,
-                                     input_data=x,
-                                     expected_output=expected)
+            testing_utils.layer_test(
+                KWinners2d, kwargs=kwargs, input_data=x, expected_output=expected
+            )
 
     @keras_parameterized.run_all_keras_modes
     def test_five(self):
@@ -605,7 +603,8 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
             model.compile(
                 loss="mse",
                 optimizer=gradient_descent.GradientDescentOptimizer(0.01),
-                run_eagerly=testing_utils.should_run_eagerly())
+                run_eagerly=testing_utils.should_run_eagerly(),
+            )
 
             # Ensure there are zero trainable parameters.
             layer = model.layers[0]
