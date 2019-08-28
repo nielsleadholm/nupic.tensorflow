@@ -54,49 +54,76 @@ class KWinnersTestBase(object):
         super(KWinnersTestBase, self).setUp()
 
         # Batch size 2
-        self.x1 = np.array(
-            [[1.0, 1.2, 1.1, 1.3, 1.0, 1.5, 1.0],
-             [1.1, 1.0, 1.2, 1.0, 1.3, 1.0, 1.2]],
-            dtype=np.float32
-        )
+        x = np.random.random((2, 7)).astype(np.float32) / 2.0
+        x[0, 1] = 1.20
+        x[0, 2] = 1.10
+        x[0, 3] = 1.30
+        x[0, 5] = 1.50
+        x[1, 0] = 1.11
+        x[1, 2] = 1.21
+        x[1, 4] = 1.31
+        x[1, 6] = 1.22
+        self.x1 = x
 
         # All equal duty cycle for x.
         self.duty_cycles1 = np.full(shape=(7,), fill_value=1.0 / 3.0, dtype=np.float32)
 
         # Batch size 2
-        self.x2 = np.array(
-            [[1.5, 1.0, 1.1, 1.3, 1.0, 1.0],
-             [1.1, 1.0, 1.2, 1.6, 1.0, 1.0]],
-            dtype=np.float32
-        )
+        x2 = np.random.random((2, 6)).astype(np.float32) / 2.0
+        x2[0, 0] = 1.50
+        x2[0, 1] = 1.02
+        x2[0, 2] = 1.10
+        x2[0, 3] = 1.30
+        x2[0, 5] = 1.03
+        x2[1, 0] = 1.11
+        x2[1, 1] = 1.04
+        x2[1, 2] = 1.20
+        x2[1, 3] = 1.60
+        x2[1, 4] = 1.01
+        x2[1, 5] = 1.05
+        self.x2 = x2
 
         # Unequal duty cycle for x2.
-        self.duty_cycles2 = np.array(
-            [2, 1, 2, 1, 2, 1],
-            dtype=np.float32
-        ) / 4
+        duty_cycle2 = np.zeros(6, dtype=np.float32)
+        duty_cycle2[0] = 1.0 / 2.0
+        duty_cycle2[1] = 1.0 / 4.0
+        duty_cycle2[2] = 1.0 / 2.0
+        duty_cycle2[3] = 1.0 / 4.0
+        duty_cycle2[4] = 1.0 / 2.0
+        duty_cycle2[5] = 1.0 / 4.0
+        self.duty_cycles2 = duty_cycle2
 
         # Batch size 2, but with negative entries.
-        self.x3 = np.array(
-            [[1.0, -1.2, 1.2, 1.0, 1.0, 1.0],
-             [1.0, 1.2, -1.2, 1.0, 1.0, 1.0]],
-            dtype=np.float32
-        )
+        x3 = np.random.random((2, 6)).astype(np.float32) - 0.5
+        x3[0, 1] = -1.20
+        x3[0, 2] = 1.20
+        x3[0, 3] = 1.03
+        x3[0, 5] = 1.01
+        x3[1, 1] = 1.21
+        x3[1, 2] = -1.21
+        x3[1, 5] = 1.02
+        self.x3 = x3
 
         # Unequal duty cycle for x3.
-        self.duty_cycles3 = np.array(
-            [0.0, 0.001, 100, 0.0, 0.0, 0.0],
-            dtype=np.float32
-        )
+        duty_cycle3 = np.zeros(6, dtype=np.float32)
+        duty_cycle3[1] = 0.001
+        duty_cycle3[2] = 100
+        self.duty_cycles3 = duty_cycle3
 
         # Batch size 1.
-        self.x4 = np.array(
-            [[1.0, 1.0, 1.2, 1.2, 1.2, 1.2, 1.3, 1.3, 1.3, 1.3]],
-            dtype=np.float32
-        )
+        x4 = np.random.random((1, 10)).astype(np.float32) / 2.0
+        x4[0, 2] = 1.20
+        x4[0, 3] = 1.21
+        x4[0, 4] = 1.22
+        x4[0, 5] = 1.23
+        x4[0, 6] = 1.30
+        x4[0, 7] = 1.31
+        x4[0, 8] = 1.32
+        x4[0, 9] = 1.33
+        self.x4 = x4
 
         # All equal duty cycle for x4.
-        self.duty_cycles4 = np.ones_like(self.x4) / 10
+        self.duty_cycles4 = np.ones(10, dtype=np.float32) / 10
 
 
 class KWinnersFowardTest(KWinnersTestBase, keras_parameterized.TestCase):
@@ -113,16 +140,15 @@ class KWinnersFowardTest(KWinnersTestBase, keras_parameterized.TestCase):
 
         # Test forward pass through the layer.
         expected = np.zeros(x.shape, dtype=np.float32)
-        expected[0, 1] = 1.2
-        expected[0, 3] = 1.3
-        expected[0, 5] = 1.5
-        expected[1, 2] = 1.2
-        expected[1, 4] = 1.3
-        expected[1, 6] = 1.2
+        expected[0, 1] = x[0, 1]
+        expected[0, 3] = x[0, 3]
+        expected[0, 5] = x[0, 5]
+        expected[1, 2] = x[1, 2]
+        expected[1, 4] = x[1, 4]
+        expected[1, 6] = x[1, 6]
 
         # Loop over floating point boost strengths.
         for b in np.arange(0.0, 10.0, dtype=np.float32):
-
             # Build layer with varying boost_strength.
             result = compute_kwinners(x, 3, duty_cycles, boost_strength=b)
             self.assertAllEqual(result, expected)
@@ -138,24 +164,24 @@ class KWinnersFowardTest(KWinnersTestBase, keras_parameterized.TestCase):
 
         # Test forward with boost strength of 0.
         expected = np.zeros(x.shape, dtype=np.float32)
-        expected[0, 0] = 1.5
-        expected[0, 2] = 1.1
-        expected[0, 3] = 1.3
-        expected[1, 0] = 1.1
-        expected[1, 2] = 1.2
-        expected[1, 3] = 1.6
+        expected[0, 0] = x[0, 0]
+        expected[0, 2] = x[0, 2]
+        expected[0, 3] = x[0, 3]
+        expected[1, 0] = x[1, 0]
+        expected[1, 2] = x[1, 2]
+        expected[1, 3] = x[1, 3]
 
         result = compute_kwinners(x, 3, duty_cycles, boost_strength=0.0)
         self.assertAllEqual(result, expected)
 
         # Test forward again with boost strength of 1.
         expected = np.zeros(x.shape, dtype=np.float32)
-        expected[0, 0] = 1.5
-        expected[0, 1] = 1.0
-        expected[0, 3] = 1.3
-        expected[1, 1] = 1.0
-        expected[1, 3] = 1.6
-        expected[1, 5] = 1.0
+        expected[0, 0] = x[0, 0]
+        expected[0, 5] = x[0, 5]
+        expected[0, 3] = x[0, 3]
+        expected[1, 1] = x[1, 1]
+        expected[1, 3] = x[1, 3]
+        expected[1, 5] = x[1, 5]
 
         result = compute_kwinners(x, 3, duty_cycles, boost_strength=1.0)
         self.assertAllEqual(result, expected)
@@ -163,15 +189,14 @@ class KWinnersFowardTest(KWinnersTestBase, keras_parameterized.TestCase):
         # Test forward again with boost strength from 2 to 10. Should give save result
         # given the differing duty cycles.
         expected = np.zeros(x.shape, dtype=np.float32)
-        expected[0, 1] = 1.0
-        expected[0, 3] = 1.3
-        expected[0, 5] = 1.0
-        expected[1, 1] = 1.0
-        expected[1, 3] = 1.6
-        expected[1, 5] = 1.0
+        expected[0, 1] = x[0, 1]
+        expected[0, 3] = x[0, 3]
+        expected[0, 5] = x[0, 5]
+        expected[1, 1] = x[1, 1]
+        expected[1, 3] = x[1, 3]
+        expected[1, 5] = x[1, 5]
 
         for b in np.arange(2.0, 10.0, dtype=np.float32):
-
             result = compute_kwinners(x, 3, duty_cycles, boost_strength=b)
             self.assertAllEqual(result, expected)
 
@@ -186,10 +211,10 @@ class KWinnersFowardTest(KWinnersTestBase, keras_parameterized.TestCase):
 
         # Test forward with boost factor of 0.
         expected = np.zeros(x.shape, dtype=np.float32)
-        expected[0, 0] = 1.0
-        expected[0, 2] = 1.2
-        expected[1, 0] = 1.0
-        expected[1, 1] = 1.2
+        expected[0, 2] = x[0, 2]
+        expected[0, 3] = x[0, 3]
+        expected[1, 1] = x[1, 1]
+        expected[1, 5] = x[1, 5]
 
         result = compute_kwinners(x, 2, duty_cycles, boost_strength=0.0)
         self.assertAllEqual(result, expected)
@@ -198,13 +223,12 @@ class KWinnersFowardTest(KWinnersTestBase, keras_parameterized.TestCase):
         # result as the negative numbers will never be in the top k and the non-one
         # values have very large duty cycles.
         expected = np.zeros(x.shape, dtype=np.float32)
-        expected[0, 0] = 1.0
-        expected[0, 3] = 1.0
-        expected[1, 0] = 1.0
-        expected[1, 1] = 1.2
+        expected[0, 3] = x[0, 3]
+        expected[0, 5] = x[0, 5]
+        expected[1, 1] = x[1, 1]
+        expected[1, 5] = x[1, 5]
 
         for b in np.arange(2.0, 10.0, dtype=np.float32):
-
             result = compute_kwinners(x, 2, duty_cycles, boost_strength=b)
             self.assertAllEqual(result, expected)
 
@@ -224,7 +248,7 @@ class KWinnersFowardTest(KWinnersTestBase, keras_parameterized.TestCase):
         self.assertAllEqual(result, expected)
 
         # Test forward with boost factor of 1 and k=1.
-        expected[0, 6] = 1.3
+        expected[0, -1] = x[0, -1]
 
         result = compute_kwinners(x, 1, duty_cycles, boost_strength=1.0)
         self.assertAllEqual(result, expected)
@@ -235,6 +259,39 @@ class KWinnersFowardTest(KWinnersTestBase, keras_parameterized.TestCase):
         result = compute_kwinners(x, 10, duty_cycles, boost_strength=1.0)
         self.assertAllEqual(result, expected)
 
+    def test_tie_breaking(self):
+        """
+        Test k-winners with tie-breaking
+        """
+        x = self.x2
+        # Force tie breaking
+        x[0, 5] = x[0, 1]
+
+        # Expected with [0, 1] winning the tie-break
+        expected1 = np.zeros_like(x)
+        expected1[0, 0] = x[0, 0]
+        expected1[0, 1] = x[0, 1]
+        expected1[0, 3] = x[0, 3]
+        expected1[1, 1] = x[1, 1]
+        expected1[1, 3] = x[1, 3]
+        expected1[1, 5] = x[1, 5]
+
+        # Expected with [0, 5] winning the tie-break
+        expected2 = np.zeros_like(x)
+        expected2[0, 0] = x[0, 0]
+        expected2[0, 3] = x[0, 3]
+        expected2[0, 5] = x[0, 5]
+        expected2[1, 1] = x[1, 1]
+        expected2[1, 3] = x[1, 3]
+        expected2[1, 5] = x[1, 5]
+        result = compute_kwinners(
+            x, k=3, duty_cycles=self.duty_cycles2, boost_strength=1.0
+        )
+        result = keras.backend.get_value(result)
+        self.assertTrue(
+            np.array_equal(result, expected1) or np.array_equal(result, expected2)
+        )
+
 
 class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
     """
@@ -243,16 +300,15 @@ class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
 
     @keras_parameterized.run_all_keras_modes
     def test_one(self):
-
         # Set input, output, and layer params.
         x = self.x2
         expected = np.zeros(x.shape, dtype=np.float32)
-        expected[0, 0] = 1.5
-        expected[0, 2] = 1.1
-        expected[0, 3] = 1.3
-        expected[1, 0] = 1.1
-        expected[1, 2] = 1.2
-        expected[1, 3] = 1.6
+        expected[0, 0] = x[0, 0]
+        expected[0, 2] = x[0, 2]
+        expected[0, 3] = x[0, 3]
+        expected[1, 0] = x[1, 0]
+        expected[1, 2] = x[1, 2]
+        expected[1, 3] = x[1, 3]
         kwargs = {
             "percent_on": 0.333,
             "k_inference_factor": 1.5,
@@ -263,45 +319,39 @@ class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
 
         # Use testing utils to validate layer functionality.
         with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
-
-            testing_utils.layer_test(KWinners,
-                                     kwargs=kwargs,
-                                     input_data=x,
-                                     expected_output=expected,
-                                     )
+            testing_utils.layer_test(
+                KWinners, kwargs=kwargs, input_data=x, expected_output=expected
+            )
 
     @keras_parameterized.run_all_keras_modes
     def test_two(self):
-
         # Set input, output, and layer params.
         x = self.x2
-        y = x.copy()
         expected = np.zeros(x.shape, dtype=np.float32)
-        expected[0, 0] = 1.5
-        expected[0, 2] = 1.1
-        expected[0, 3] = 1.3
-        expected[1, 0] = 1.1
-        expected[1, 2] = 1.2
-        expected[1, 3] = 1.6
-        kwargs = {
-            "percent_on": 0.333,
-            "k_inference_factor": 1.5,
-            "boost_strength": 1.0,
-            "boost_strength_factor": 0.5,
-            "duty_cycle_period": 1000,
-        }
+        expected[0, 0] = x[0, 0]
+        expected[0, 2] = x[0, 2]
+        expected[0, 3] = x[0, 3]
+        expected[1, 0] = x[1, 0]
+        expected[1, 2] = x[1, 2]
+        expected[1, 3] = x[1, 3]
 
         # Test layer within Sequential model.
         with self.cached_session():
-
             # Compile model. Results should be independent on the loss and optimizer.
             model = keras.models.Sequential()
-            kw = KWinners(**kwargs)
+            kw = KWinners(
+                percent_on=0.333,
+                k_inference_factor=1.5,
+                boost_strength=1.0,
+                boost_strength_factor=0.5,
+                duty_cycle_period=1000,
+            )
             model.add(kw)
             model.compile(
                 loss="mse",
                 optimizer=gradient_descent.GradientDescentOptimizer(0.01),
-                run_eagerly=testing_utils.should_run_eagerly())
+                run_eagerly=testing_utils.should_run_eagerly(),
+            )
 
             # Ensure there are zero trainable parameters.
             layer = model.layers[0]
@@ -317,18 +367,15 @@ class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
             self.assertAllEqual(result, expected)
 
             # Validate one forward pass in training mode.
-            expected = np.zeros(x.shape, dtype=np.float32)
-            expected[0, 1] = 1.0
-            expected[0, 4] = 1.0
-            expected[0, 5] = 1.0
-            expected[1, 1] = 1.0
-            expected[1, 4] = 1.0
-            expected[1, 5] = 1.0
+            y = np.zeros(x.shape, dtype=np.float32)
+            # Expect 2 winners per batch (33% of 6)
+            y[0, 0] = x[0, 0]
+            y[0, 3] = x[0, 3]
+            y[1, 2] = x[1, 2]
+            y[1, 3] = x[1, 3]
 
-            model.train_on_batch(x, y)
-
-            result = model.predict_on_batch(x)
-            self.assertAllEqual(result, expected)
+            loss = model.train_on_batch(x, y)
+            self.assertEquals(loss, 0.0)
 
             # Test values of updated duty cycle.
             old_duty = layer.duty_cycles
@@ -337,18 +384,14 @@ class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
             self.assertAllEqual(old_duty, new_duty)
 
             # Test forward with updated duty cycle.
-            expected = np.zeros(x.shape, dtype=np.float32)
-            expected[0, 0] = 1.5
-            expected[0, 2] = 1.1
-            expected[0, 5] = 1.0
-            expected[1, 2] = 1.2
-            expected[1, 3] = 1.6
-            expected[1, 5] = 1.0
+            y = np.zeros(x.shape, dtype=np.float32)
+            y[0, 1] = x[0, 1]
+            y[0, 5] = x[0, 5]
+            y[1, 1] = x[1, 1]
+            y[1, 5] = x[1, 5]
 
-            model.train_on_batch(x, y)
-
-            result = model.predict_on_batch(x)
-            self.assertAllEqual(result, expected)
+            loss = model.train_on_batch(x, y)
+            self.assertEqual(loss, 0.0)
 
     @keras_parameterized.run_all_keras_modes
     def test_three(self):
@@ -359,31 +402,23 @@ class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
         x = self.x2
         y = x.copy()
 
-        expected = np.zeros_like(x)
-        expected[0, 0] = 1.5
-        expected[0, 4] = 1.0
-        expected[1, 2] = 1.2
-        expected[1, 3] = 1.6
-
-        kwargs = {
-            "percent_on": 0.333,
-            "k_inference_factor": 1.0,
-            "boost_strength": 1.0,
-            "boost_strength_factor": 0.5,
-            "duty_cycle_period": 1000,
-        }
-
         # Test layer within Sequential model.
         with self.cached_session():
-
             # Compile model. Results should be independent on the loss and optimizer.
             model = keras.models.Sequential()
-            kw = KWinners(**kwargs)
+            kw = KWinners(
+                percent_on=0.333,
+                k_inference_factor=1.5,
+                boost_strength=1.0,
+                boost_strength_factor=0.5,
+                duty_cycle_period=1000,
+            )
             model.add(kw)
             model.compile(
                 loss="mse",
                 optimizer=gradient_descent.GradientDescentOptimizer(0.01),
-                run_eagerly=testing_utils.should_run_eagerly())
+                run_eagerly=testing_utils.should_run_eagerly(),
+            )
 
             # Ensure there are zero trainable parameters.
             layer = model.layers[0]
@@ -398,8 +433,23 @@ class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
             model.train_on_batch(x, y)
             model.train_on_batch(x, y)
 
+            # expected = np.zeros_like(x)
+            # expected[0, 0] = x[0, 0]
+            # expected[0, 5] = x[0, 5]
+            # expected[1, 2] = x[1, 2]
+            # expected[1, 3] = x[1, 3]
+            # result = model(x, training=True)
+            # self.assertAllEqual(result, expected)
+
             # Validate model prediction (i.e. a forward pass in testing mode).
             result = model.predict_on_batch(x)
+            expected = np.zeros_like(x)
+            expected[0, 0] = x[0, 0]
+            expected[0, 1] = x[0, 1]
+            expected[0, 5] = x[0, 5]
+            expected[1, 2] = x[1, 2]
+            expected[1, 3] = x[1, 3]
+            expected[1, 4] = x[1, 4]
             self.assertAllEqual(result, expected)
 
 
@@ -409,117 +459,122 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
     """
 
     def setUp(self):
-
         super().setUp()
 
         # Batch size 1
-        self.x1 = np.ones((1, 3, 2, 2), dtype=np.float32)
-        self.x1[0, 0, 1, 0] = 1.1
-        self.x1[0, 0, 1, 1] = 1.2
-        self.x1[0, 1, 0, 1] = 1.2
-        self.x1[0, 2, 1, 0] = 1.3
+        x = np.random.random((1, 3, 2, 2)).astype(np.float32) / 2.0
+        x[0, 0, 1, 0] = 1.10
+        x[0, 0, 1, 1] = 1.20
+        x[0, 1, 0, 1] = 1.21
+        x[0, 2, 1, 0] = 1.30
+        self.x1 = x
 
         # Batch size 2
-        self.x2 = np.ones((2, 3, 2, 2), dtype=np.float32)
+        x = np.random.random((2, 3, 2, 2)).astype(np.float32) / 2.0
 
-        self.x2[0, 0, 1, 0] = 1.1
-        self.x2[0, 0, 1, 1] = 1.2
-        self.x2[0, 1, 0, 1] = 1.2
-        self.x2[0, 2, 1, 0] = 1.3
+        x[0, 0, 1, 0] = 1.10
+        x[0, 0, 1, 1] = 1.20
+        x[0, 1, 0, 1] = 1.21
+        x[0, 2, 1, 0] = 1.30
 
-        self.x2[1, 0, 0, 0] = 1.4
-        self.x2[1, 1, 0, 0] = 1.5
-        self.x2[1, 1, 0, 1] = 1.6
-        self.x2[1, 2, 1, 1] = 1.7
+        x[1, 0, 0, 0] = 1.40
+        x[1, 1, 0, 0] = 1.50
+        x[1, 1, 0, 1] = 1.60
+        x[1, 2, 1, 1] = 1.70
+        self.x2 = x
 
     @keras_parameterized.run_all_keras_modes
     def test_one(self):
         """Equal duty cycle, boost strength 0, k=4, batch size 1."""
         x = self.x1
         expected = np.zeros_like(x)
-        expected[0, 0, 1, 0] = 1.1
-        expected[0, 0, 1, 1] = 1.2
-        expected[0, 1, 0, 1] = 1.2
-        expected[0, 2, 1, 0] = 1.3
+        expected[0, 0, 1, 0] = x[0, 0, 1, 0]
+        expected[0, 0, 1, 1] = x[0, 0, 1, 1]
+        expected[0, 1, 0, 1] = x[0, 1, 0, 1]
+        expected[0, 2, 1, 0] = x[0, 2, 1, 0]
 
         n = np.prod(x.shape[1:])
         kwargs = {
             "percent_on": 4 / n,
             "k_inference_factor": 1.0,
-            "boost_strength": 0.0}
+            "boost_strength": 0.0,
+            "data_format": "channels_first",
+        }
         with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
-            testing_utils.layer_test(KWinners2d,
-                                     kwargs=kwargs,
-                                     input_data=x,
-                                     expected_output=expected)
+            testing_utils.layer_test(
+                KWinners2d, kwargs=kwargs, input_data=x, expected_output=expected
+            )
 
     @keras_parameterized.run_all_keras_modes
     def test_two(self):
         """Equal duty cycle, boost strength 0, k=3."""
         x = self.x1
         expected = np.zeros(x.shape)
-        expected[0, 0, 1, 1] = 1.2
-        expected[0, 1, 0, 1] = 1.2
-        expected[0, 2, 1, 0] = 1.3
+        expected[0, 0, 1, 1] = x[0, 0, 1, 1]
+        expected[0, 1, 0, 1] = x[0, 1, 0, 1]
+        expected[0, 2, 1, 0] = x[0, 2, 1, 0]
         n = np.prod(x.shape[1:])
         kwargs = {
             "percent_on": 3 / n,
             "k_inference_factor": 1.0,
-            "boost_strength": 0.0}
+            "boost_strength": 0.0,
+            "data_format": "channels_first",
+        }
 
         with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
-            testing_utils.layer_test(KWinners2d,
-                                     kwargs=kwargs,
-                                     input_data=x,
-                                     expected_output=expected)
+            testing_utils.layer_test(
+                KWinners2d, kwargs=kwargs, input_data=x, expected_output=expected
+            )
 
     @keras_parameterized.run_all_keras_modes
     def test_three(self):
         """Equal duty cycle, boost strength=0, k=4, batch size=2."""
         x = self.x2
         expected = np.zeros(x.shape)
-        expected[0, 0, 1, 0] = 1.1
-        expected[0, 0, 1, 1] = 1.2
-        expected[0, 1, 0, 1] = 1.2
-        expected[0, 2, 1, 0] = 1.3
-        expected[1, 0, 0, 0] = 1.4
-        expected[1, 1, 0, 0] = 1.5
-        expected[1, 1, 0, 1] = 1.6
-        expected[1, 2, 1, 1] = 1.7
+        expected[0, 0, 1, 0] = x[0, 0, 1, 0]
+        expected[0, 0, 1, 1] = x[0, 0, 1, 1]
+        expected[0, 1, 0, 1] = x[0, 1, 0, 1]
+        expected[0, 2, 1, 0] = x[0, 2, 1, 0]
+        expected[1, 0, 0, 0] = x[1, 0, 0, 0]
+        expected[1, 1, 0, 0] = x[1, 1, 0, 0]
+        expected[1, 1, 0, 1] = x[1, 1, 0, 1]
+        expected[1, 2, 1, 1] = x[1, 2, 1, 1]
 
         n = np.prod(x.shape[1:])
         kwargs = {
             "percent_on": 4 / n,
             "k_inference_factor": 1.0,
-            "boost_strength": 0.0}
+            "boost_strength": 0.0,
+            "data_format": "channels_first",
+        }
         with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
-            testing_utils.layer_test(KWinners2d,
-                                     kwargs=kwargs,
-                                     input_data=x,
-                                     expected_output=expected)
+            testing_utils.layer_test(
+                KWinners2d, kwargs=kwargs, input_data=x, expected_output=expected
+            )
 
     @keras_parameterized.run_all_keras_modes
     def test_four(self):
         """Equal duty cycle, boost strength=0, k=3, batch size=2."""
         x = self.x2
         expected = np.zeros(x.shape)
-        expected[0, 0, 1, 1] = 1.2
-        expected[0, 1, 0, 1] = 1.2
-        expected[0, 2, 1, 0] = 1.3
-        expected[1, 1, 0, 0] = 1.5
-        expected[1, 1, 0, 1] = 1.6
-        expected[1, 2, 1, 1] = 1.7
+        expected[0, 0, 1, 1] = x[0, 0, 1, 1]
+        expected[0, 1, 0, 1] = x[0, 1, 0, 1]
+        expected[0, 2, 1, 0] = x[0, 2, 1, 0]
+        expected[1, 1, 0, 0] = x[1, 1, 0, 0]
+        expected[1, 1, 0, 1] = x[1, 1, 0, 1]
+        expected[1, 2, 1, 1] = x[1, 2, 1, 1]
 
         n = np.prod(x.shape[1:])
         kwargs = {
             "percent_on": 3 / n,
             "k_inference_factor": 1.0,
-            "boost_strength": 0.0}
+            "boost_strength": 0.0,
+            "data_format": "channels_first",
+        }
         with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
-            testing_utils.layer_test(KWinners2d,
-                                     kwargs=kwargs,
-                                     input_data=x,
-                                     expected_output=expected)
+            testing_utils.layer_test(
+                KWinners2d, kwargs=kwargs, input_data=x, expected_output=expected
+            )
 
     @keras_parameterized.run_all_keras_modes
     def test_five(self):
@@ -530,25 +585,17 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
         x = self.x2
         y = x.copy()
 
-        expected = np.zeros_like(x)
-        expected[0, 0, 1, 0] = 1.1
-        expected[0, 0, 1, 1] = 1.2
-        expected[0, 2, 1, 0] = 1.3
-        expected[1, 0, 0, 0] = 1.4
-        expected[1, 1, 0, 1] = 1.6
-        expected[1, 2, 1, 1] = 1.7
-
         kwargs = {
             "percent_on": 0.25,
-            "k_inference_factor": 1.0,
+            "k_inference_factor": 0.5,
             "boost_strength": 1.0,
             "boost_strength_factor": 0.5,
             "duty_cycle_period": 1000,
+            "data_format": "channels_first",
         }
 
         # Test layer within Sequential model.
         with self.cached_session():
-
             # Compile model. Results should be independent on the loss and optimizer.
             model = keras.models.Sequential()
             kw = KWinners2d(**kwargs)
@@ -556,7 +603,8 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
             model.compile(
                 loss="mse",
                 optimizer=gradient_descent.GradientDescentOptimizer(0.01),
-                run_eagerly=testing_utils.should_run_eagerly())
+                run_eagerly=testing_utils.should_run_eagerly(),
+            )
 
             # Ensure there are zero trainable parameters.
             layer = model.layers[0]
@@ -569,8 +617,14 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
             model.train_on_batch(x, y)
             model.train_on_batch(x, y)
             model.train_on_batch(x, y)
+            model.train_on_batch(x, y)
 
             # Validate model prediction (i.e. a forward pass in testing mode).
+            expected = np.zeros_like(x)
+            expected[0, 0, 1, 1] = x[0, 0, 1, 1]
+            expected[0, 2, 1, 0] = x[0, 2, 1, 0]
+            expected[1, 1, 0, 1] = x[1, 1, 0, 1]
+            expected[1, 2, 1, 1] = x[1, 2, 1, 1]
             result = model.predict_on_batch(x)
             self.assertAllEqual(result, expected)
 
