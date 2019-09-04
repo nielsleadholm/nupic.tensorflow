@@ -25,6 +25,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.python.keras import backend as K
 
+
 IMAGE_DATA_FORMAT = K.image_data_format()
 
 
@@ -95,17 +96,9 @@ def compute_kwinners(x, k, duty_cycles, boost_strength):
     # boosted values
     boosted = tf.reshape(boosted, [batch_size, -1])
     flat_x = tf.reshape(x, [batch_size, -1])
-    top_k, indices = tf.math.top_k(input=boosted, k=k, sorted=False)
-    dim_range = tf.expand_dims(tf.range(0, tf.shape(indices)[0]), 1)
-    dim_range = tf.tile(dim_range, [1, k])
-    full_indices = tf.concat(
-        [tf.expand_dims(dim_range, -1), tf.expand_dims(indices, -1)], axis=2
-    )
-    full_indices = tf.reshape(full_indices, [-1, 2])
-
-    updates = tf.gather_nd(params=flat_x, indices=full_indices)
-    res = tf.scatter_nd(indices=full_indices, updates=updates, shape=tf.shape(flat_x))
-    return tf.reshape(res, input_shape)
+    _, indices = tf.math.top_k(input=boosted, k=k, sorted=False)
+    mask = tf.reduce_sum(tf.one_hot(indices, tf.shape(boosted)[-1]), axis=1)
+    return tf.reshape(mask * flat_x, input_shape)
 
 
 class KWinnersBase(keras.layers.Layer, metaclass=abc.ABCMeta):
