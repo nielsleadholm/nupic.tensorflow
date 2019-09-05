@@ -25,7 +25,6 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.python.keras import backend as K
 
-
 IMAGE_DATA_FORMAT = K.image_data_format()
 
 
@@ -87,7 +86,7 @@ def compute_kwinners(x, k, duty_cycles, boost_strength):
     input_shape = tf.shape(x)
     batch_size = input_shape[0]
     n = tf.reduce_prod(x.shape[1:])
-    target_density = tf.cast(k / n, tf.float32)
+    target_density = tf.cast(k, tf.float32) / tf.cast(n, tf.float32)
     boost_factors = tf.exp((target_density - duty_cycles) * boost_strength)
     boosted = x * boost_factors
 
