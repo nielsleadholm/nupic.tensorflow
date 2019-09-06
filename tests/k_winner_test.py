@@ -18,8 +18,6 @@
 #  http://numenta.org/licenses/
 #
 
-import random
-
 import numpy as np
 import tensorflow as tf
 from tensorflow.python import keras
@@ -43,12 +41,6 @@ class KWinnersTestBase(object):
     """
     Base module for setting up tests.
     """
-
-    @classmethod
-    def setUpClass(cls):
-        tf.set_random_seed(SEED)
-        np.random.seed(SEED)
-        random.seed(SEED)
 
     def setUp(self):
         super(KWinnersTestBase, self).setUp()
@@ -126,6 +118,7 @@ class KWinnersTestBase(object):
         self.duty_cycles4 = np.ones(10, dtype=np.float32) / 10
 
 
+@keras_parameterized.run_all_keras_modes
 class KWinnersFowardTest(KWinnersTestBase, keras_parameterized.TestCase):
     """
     Module for testing the forward pass, i.e. the compute_kwinners function.
@@ -293,12 +286,12 @@ class KWinnersFowardTest(KWinnersTestBase, keras_parameterized.TestCase):
         )
 
 
+@keras_parameterized.run_all_keras_modes
 class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
     """
     Module for testing the 1D KWinners layer.
     """
 
-    @keras_parameterized.run_all_keras_modes
     def test_one(self):
         # Set input, output, and layer params.
         x = self.x2
@@ -318,12 +311,11 @@ class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
         }
 
         # Use testing utils to validate layer functionality.
-        with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
+        with keras.utils.custom_object_scope(CUSTOM_OBJECTS):
             testing_utils.layer_test(
                 KWinners, kwargs=kwargs, input_data=x, expected_output=expected
             )
 
-    @keras_parameterized.run_all_keras_modes
     def test_two(self):
         # Set input, output, and layer params.
         x = self.x2
@@ -336,64 +328,62 @@ class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
         expected[1, 3] = x[1, 3]
 
         # Test layer within Sequential model.
-        with self.cached_session():
-            # Compile model. Results should be independent on the loss and optimizer.
-            model = keras.models.Sequential()
-            kw = KWinners(
-                percent_on=0.333,
-                k_inference_factor=1.5,
-                boost_strength=1.0,
-                boost_strength_factor=0.5,
-                duty_cycle_period=1000,
-            )
-            model.add(kw)
-            model.compile(
-                loss="mse",
-                optimizer=gradient_descent.GradientDescentOptimizer(0.01),
-                run_eagerly=testing_utils.should_run_eagerly(),
-            )
+        # Compile model. Results should be independent on the loss and optimizer.
+        model = keras.models.Sequential()
+        kw = KWinners(
+            percent_on=0.333,
+            k_inference_factor=1.5,
+            boost_strength=1.0,
+            boost_strength_factor=0.5,
+            duty_cycle_period=1000,
+        )
+        model.add(kw)
+        model.compile(
+            loss="mse",
+            optimizer=gradient_descent.GradientDescentOptimizer(0.01),
+            run_eagerly=testing_utils.should_run_eagerly(),
+        )
 
-            # Ensure there are zero trainable parameters.
-            layer = model.layers[0]
-            trainable_weights = layer.trainable_weights
-            self.assertEquals(0, len(trainable_weights))
+        # Ensure there are zero trainable parameters.
+        layer = model.layers[0]
+        trainable_weights = layer.trainable_weights
+        self.assertEmpty(trainable_weights)
 
-            # Validate model prediction (i.e. a forward pass in testing mode).
-            result = model.predict_on_batch(x)
-            self.assertAllEqual(result, expected)
+        # Validate model prediction (i.e. a forward pass in testing mode).
+        result = model.predict_on_batch(x)
+        self.assertAllEqual(result, expected)
 
-            # Ensure result doesn't change when only in testing mode.
-            result = model.predict_on_batch(x)
-            self.assertAllEqual(result, expected)
+        # Ensure result doesn't change when only in testing mode.
+        result = model.predict_on_batch(x)
+        self.assertAllEqual(result, expected)
 
-            # Validate one forward pass in training mode.
-            y = np.zeros(x.shape, dtype=np.float32)
-            # Expect 2 winners per batch (33% of 6)
-            y[0, 0] = x[0, 0]
-            y[0, 3] = x[0, 3]
-            y[1, 2] = x[1, 2]
-            y[1, 3] = x[1, 3]
+        # Validate one forward pass in training mode.
+        y = np.zeros(x.shape, dtype=np.float32)
+        # Expect 2 winners per batch (33% of 6)
+        y[0, 0] = x[0, 0]
+        y[0, 3] = x[0, 3]
+        y[1, 2] = x[1, 2]
+        y[1, 3] = x[1, 3]
 
-            loss = model.train_on_batch(x, y)
-            self.assertEquals(loss, 0.0)
+        loss = model.train_on_batch(x, y)
+        self.assertEqual(loss, 0.0)
 
-            # Test values of updated duty cycle.
-            old_duty = layer.duty_cycles
-            old_duty = old_duty.numpy() if tf.executing_eagerly() else old_duty.eval()
-            new_duty = np.array([1.0, 0, 1.0, 2.0, 0, 0], dtype=np.float32) / 2.0
-            self.assertAllEqual(old_duty, new_duty)
+        # Test values of updated duty cycle.
+        old_duty = layer.duty_cycles
+        old_duty = old_duty.numpy() if tf.executing_eagerly() else old_duty.eval()
+        new_duty = np.array([1.0, 0, 1.0, 2.0, 0, 0], dtype=np.float32) / 2.0
+        self.assertAllEqual(old_duty, new_duty)
 
-            # Test forward with updated duty cycle.
-            y = np.zeros(x.shape, dtype=np.float32)
-            y[0, 1] = x[0, 1]
-            y[0, 5] = x[0, 5]
-            y[1, 1] = x[1, 1]
-            y[1, 5] = x[1, 5]
+        # Test forward with updated duty cycle.
+        y = np.zeros(x.shape, dtype=np.float32)
+        y[0, 1] = x[0, 1]
+        y[0, 5] = x[0, 5]
+        y[1, 1] = x[1, 1]
+        y[1, 5] = x[1, 5]
 
-            loss = model.train_on_batch(x, y)
-            self.assertEqual(loss, 0.0)
+        loss = model.train_on_batch(x, y)
+        self.assertEqual(loss, 0.0)
 
-    @keras_parameterized.run_all_keras_modes
     def test_three(self):
         """
         Test a series of calls on the layer in training mode.
@@ -403,63 +393,63 @@ class KWinners1DLayerTest(KWinnersTestBase, keras_parameterized.TestCase):
         y = x.copy()
 
         # Test layer within Sequential model.
-        with self.cached_session():
-            # Compile model. Results should be independent on the loss and optimizer.
-            model = keras.models.Sequential()
-            kw = KWinners(
-                percent_on=0.333,
-                k_inference_factor=1.5,
-                boost_strength=1.0,
-                boost_strength_factor=0.5,
-                duty_cycle_period=1000,
-            )
-            model.add(kw)
-            model.compile(
-                loss="mse",
-                optimizer=gradient_descent.GradientDescentOptimizer(0.01),
-                run_eagerly=testing_utils.should_run_eagerly(),
-            )
+        # Compile model. Results should be independent on the loss and optimizer.
+        model = keras.models.Sequential()
+        kw = KWinners(
+            percent_on=0.333,
+            k_inference_factor=1.5,
+            boost_strength=1.0,
+            boost_strength_factor=0.5,
+            duty_cycle_period=1000,
+        )
+        model.add(kw)
+        model.compile(
+            loss="mse",
+            optimizer=gradient_descent.GradientDescentOptimizer(0.01),
+            run_eagerly=testing_utils.should_run_eagerly(),
+        )
 
-            # Ensure there are zero trainable parameters.
-            layer = model.layers[0]
-            trainable_weights = layer.trainable_weights
-            self.assertEquals(0, len(trainable_weights))
+        # Ensure there are zero trainable parameters.
+        layer = model.layers[0]
+        trainable_weights = layer.trainable_weights
+        self.assertEmpty(trainable_weights)
 
-            # "Train" on a sequence of batches. This will only effect the duty cycle.
-            model.train_on_batch(x, y)
-            model.train_on_batch(x, y)
-            model.train_on_batch(x, y)
-            model.train_on_batch(x, y)
-            model.train_on_batch(x, y)
-            model.train_on_batch(x, y)
+        # "Train" on a sequence of batches. This will only effect the duty cycle.
+        model.train_on_batch(x, y)
+        model.train_on_batch(x, y)
+        model.train_on_batch(x, y)
+        model.train_on_batch(x, y)
+        model.train_on_batch(x, y)
+        model.train_on_batch(x, y)
 
-            # expected = np.zeros_like(x)
-            # expected[0, 0] = x[0, 0]
-            # expected[0, 5] = x[0, 5]
-            # expected[1, 2] = x[1, 2]
-            # expected[1, 3] = x[1, 3]
-            # result = model(x, training=True)
-            # self.assertAllEqual(result, expected)
+        # expected = np.zeros_like(x)
+        # expected[0, 0] = x[0, 0]
+        # expected[0, 5] = x[0, 5]
+        # expected[1, 2] = x[1, 2]
+        # expected[1, 3] = x[1, 3]
+        # result = model(x, training=True)
+        # self.assertAllEqual(result, expected)
 
-            # Validate model prediction (i.e. a forward pass in testing mode).
-            result = model.predict_on_batch(x)
-            expected = np.zeros_like(x)
-            expected[0, 0] = x[0, 0]
-            expected[0, 1] = x[0, 1]
-            expected[0, 5] = x[0, 5]
-            expected[1, 2] = x[1, 2]
-            expected[1, 3] = x[1, 3]
-            expected[1, 4] = x[1, 4]
-            self.assertAllEqual(result, expected)
+        # Validate model prediction (i.e. a forward pass in testing mode).
+        result = model.predict_on_batch(x)
+        expected = np.zeros_like(x)
+        expected[0, 0] = x[0, 0]
+        expected[0, 1] = x[0, 1]
+        expected[0, 5] = x[0, 5]
+        expected[1, 2] = x[1, 2]
+        expected[1, 3] = x[1, 3]
+        expected[1, 4] = x[1, 4]
+        self.assertAllEqual(result, expected)
 
 
+@keras_parameterized.run_all_keras_modes
 class KWinners2DLayerTest(keras_parameterized.TestCase):
     """
     Module for testing the 1D KWinners layer.
     """
 
     def setUp(self):
-        super().setUp()
+        super(KWinners2DLayerTest, self).setUp()
 
         # Batch size 1
         x = np.random.random((1, 3, 2, 2)).astype(np.float32) / 2.0
@@ -483,7 +473,6 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
         x[1, 2, 1, 1] = 1.70
         self.x2 = x
 
-    @keras_parameterized.run_all_keras_modes
     def test_one(self):
         """Equal duty cycle, boost strength 0, k=4, batch size 1."""
         x = self.x1
@@ -500,12 +489,11 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
             "boost_strength": 0.0,
             "data_format": "channels_first",
         }
-        with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
+        with keras.utils.custom_object_scope(CUSTOM_OBJECTS):
             testing_utils.layer_test(
                 KWinners2d, kwargs=kwargs, input_data=x, expected_output=expected
             )
 
-    @keras_parameterized.run_all_keras_modes
     def test_two(self):
         """Equal duty cycle, boost strength 0, k=3."""
         x = self.x1
@@ -521,12 +509,11 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
             "data_format": "channels_first",
         }
 
-        with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
+        with keras.utils.custom_object_scope(CUSTOM_OBJECTS):
             testing_utils.layer_test(
                 KWinners2d, kwargs=kwargs, input_data=x, expected_output=expected
             )
 
-    @keras_parameterized.run_all_keras_modes
     def test_three(self):
         """Equal duty cycle, boost strength=0, k=4, batch size=2."""
         x = self.x2
@@ -547,12 +534,11 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
             "boost_strength": 0.0,
             "data_format": "channels_first",
         }
-        with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
+        with keras.utils.custom_object_scope(CUSTOM_OBJECTS):
             testing_utils.layer_test(
                 KWinners2d, kwargs=kwargs, input_data=x, expected_output=expected
             )
 
-    @keras_parameterized.run_all_keras_modes
     def test_four(self):
         """Equal duty cycle, boost strength=0, k=3, batch size=2."""
         x = self.x2
@@ -571,12 +557,11 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
             "boost_strength": 0.0,
             "data_format": "channels_first",
         }
-        with self.cached_session(), keras.utils.custom_object_scope(CUSTOM_OBJECTS):
+        with keras.utils.custom_object_scope(CUSTOM_OBJECTS):
             testing_utils.layer_test(
                 KWinners2d, kwargs=kwargs, input_data=x, expected_output=expected
             )
 
-    @keras_parameterized.run_all_keras_modes
     def test_five(self):
         """
         Test a series of calls on the layer in training mode.
@@ -595,38 +580,37 @@ class KWinners2DLayerTest(keras_parameterized.TestCase):
         }
 
         # Test layer within Sequential model.
-        with self.cached_session():
-            # Compile model. Results should be independent on the loss and optimizer.
-            model = keras.models.Sequential()
-            kw = KWinners2d(**kwargs)
-            model.add(kw)
-            model.compile(
-                loss="mse",
-                optimizer=gradient_descent.GradientDescentOptimizer(0.01),
-                run_eagerly=testing_utils.should_run_eagerly(),
-            )
+        # Compile model. Results should be independent on the loss and optimizer.
+        model = keras.models.Sequential()
+        kw = KWinners2d(**kwargs)
+        model.add(kw)
+        model.compile(
+            loss="mse",
+            optimizer=gradient_descent.GradientDescentOptimizer(0.01),
+            run_eagerly=testing_utils.should_run_eagerly(),
+        )
 
-            # Ensure there are zero trainable parameters.
-            layer = model.layers[0]
-            trainable_weights = layer.trainable_weights
-            self.assertEquals(0, len(trainable_weights))
+        # Ensure there are zero trainable parameters.
+        layer = model.layers[0]
+        trainable_weights = layer.trainable_weights
+        self.assertEmpty(trainable_weights)
 
-            # "Train" on a sequence of batches. This will only effect the duty cycle.
-            model.train_on_batch(x, y)
-            model.train_on_batch(x, y)
-            model.train_on_batch(x, y)
-            model.train_on_batch(x, y)
-            model.train_on_batch(x, y)
-            model.train_on_batch(x, y)
+        # "Train" on a sequence of batches. This will only effect the duty cycle.
+        model.train_on_batch(x, y)
+        model.train_on_batch(x, y)
+        model.train_on_batch(x, y)
+        model.train_on_batch(x, y)
+        model.train_on_batch(x, y)
+        model.train_on_batch(x, y)
 
-            # Validate model prediction (i.e. a forward pass in testing mode).
-            expected = np.zeros_like(x)
-            expected[0, 0, 1, 1] = x[0, 0, 1, 1]
-            expected[0, 2, 1, 0] = x[0, 2, 1, 0]
-            expected[1, 1, 0, 1] = x[1, 1, 0, 1]
-            expected[1, 2, 1, 1] = x[1, 2, 1, 1]
-            result = model.predict_on_batch(x)
-            self.assertAllEqual(result, expected)
+        # Validate model prediction (i.e. a forward pass in testing mode).
+        expected = np.zeros_like(x)
+        expected[0, 0, 1, 1] = x[0, 0, 1, 1]
+        expected[0, 2, 1, 0] = x[0, 2, 1, 0]
+        expected[1, 1, 0, 1] = x[1, 1, 0, 1]
+        expected[1, 2, 1, 1] = x[1, 2, 1, 1]
+        result = model.predict_on_batch(x)
+        self.assertAllEqual(result, expected)
 
 
 if __name__ == "__main__":
