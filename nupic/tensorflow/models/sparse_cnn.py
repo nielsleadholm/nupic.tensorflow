@@ -82,9 +82,10 @@ class GSCSparseCNN(keras.Sequential):
         duty_cycle_period=1000,
         data_format=IMAGE_DATA_FORMAT,
         pre_trained=False,
+        name=None,
         **kwargs,
     ):
-        super(GSCSparseCNN, self).__init__(**kwargs)
+        super(GSCSparseCNN, self).__init__(name=name, **kwargs)
 
         if data_format == "channels_first":
             axis = 1
@@ -217,13 +218,14 @@ class GSCSuperSparseCNN(GSCSparseCNN):
 
     """
 
-    def __init__(self, data_format=IMAGE_DATA_FORMAT, pre_trained=False):
+    def __init__(self, data_format=IMAGE_DATA_FORMAT, pre_trained=False, name=None):
         super(GSCSuperSparseCNN, self).__init__(
             linear_units=1500,
             linear_percent_on=0.067,
             linear_weight_sparsity=0.1,
             data_format=data_format,
             pre_trained=False,
+            name=name,
         )
         if pre_trained:
             model_url, model_hash = MODEL_URLS["gsc_super_sparse_cnn"]
