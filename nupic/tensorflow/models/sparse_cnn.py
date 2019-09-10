@@ -67,6 +67,8 @@ class GSCSparseCNN(keras.Sequential):
         to inputs with shape `(batch, channels, height, width)`.
         Similar to `data_format` argument in :class:`keras.layers.Conv2D`.
     :param pre_trained: Whether or not to create a pre-trained model
+    :param name: Model name
+    :param batch_norm: Whether or not to use BatchNormLayers
     """
 
     def __init__(
@@ -83,6 +85,7 @@ class GSCSparseCNN(keras.Sequential):
         data_format=IMAGE_DATA_FORMAT,
         pre_trained=False,
         name=None,
+        batch_norm=True,
         **kwargs,
     ):
         super(GSCSparseCNN, self).__init__(name=name, **kwargs)
@@ -103,16 +106,17 @@ class GSCSparseCNN(keras.Sequential):
                 kernel_size=5,
             )
         )
-        self.add(
-            keras.layers.BatchNormalization(
-                name="cnn1_batchnorm",
-                axis=axis,
-                epsilon=1e-05,
-                momentum=0.9,
-                center=False,
-                scale=False,
+        if batch_norm:
+            self.add(
+                keras.layers.BatchNormalization(
+                    name="cnn1_batchnorm",
+                    axis=axis,
+                    epsilon=1e-05,
+                    momentum=0.9,
+                    center=False,
+                    scale=False,
+                )
             )
-        )
         self.add(
             keras.layers.MaxPool2D(
                 name="cnn1_maxpool",
@@ -140,16 +144,17 @@ class GSCSparseCNN(keras.Sequential):
                 kernel_size=5,
             )
         )
-        self.add(
-            keras.layers.BatchNormalization(
-                name="cnn2_batchnorm",
-                axis=axis,
-                epsilon=1e-05,
-                momentum=0.9,
-                center=False,
-                scale=False,
+        if batch_norm:
+            self.add(
+                keras.layers.BatchNormalization(
+                    name="cnn2_batchnorm",
+                    axis=axis,
+                    epsilon=1e-05,
+                    momentum=0.9,
+                    center=False,
+                    scale=False,
+                )
             )
-        )
         self.add(
             keras.layers.MaxPool2D(
                 name="cnn2_maxpool",
@@ -177,11 +182,13 @@ class GSCSparseCNN(keras.Sequential):
                 kernel_constraint=SparseWeights(linear_weight_sparsity),
             )
         )
-        self.add(
-            keras.layers.BatchNormalization(
-                name="linear_bn", epsilon=1e-05, momentum=0.9, center=False, scale=False
+        if batch_norm:
+            self.add(
+                keras.layers.BatchNormalization(
+                    name="linear_bn", epsilon=1e-05, momentum=0.9, center=False,
+                    scale=False
+                )
             )
-        )
         self.add(
             KWinners(
                 name="linear_kwinner",
@@ -196,6 +203,9 @@ class GSCSparseCNN(keras.Sequential):
         self.add(keras.layers.Softmax(axis=1))
 
         if pre_trained:
+            if not batch_norm:
+                raise NotImplementedError(
+                    "Unable to load pre-trained models with no BatchNorm")
             model_url, model_hash = MODEL_URLS["gsc_sparse_cnn"]
             file_name = "gsc_sparse_cnn-{:.8}".format(model_hash)
             archive_path = get_file(
@@ -218,7 +228,8 @@ class GSCSuperSparseCNN(GSCSparseCNN):
 
     """
 
-    def __init__(self, data_format=IMAGE_DATA_FORMAT, pre_trained=False, name=None):
+    def __init__(self, data_format=IMAGE_DATA_FORMAT, pre_trained=False,
+                 name=None, batch_norm=True):
         super(GSCSuperSparseCNN, self).__init__(
             linear_units=1500,
             linear_percent_on=0.067,
@@ -226,8 +237,12 @@ class GSCSuperSparseCNN(GSCSparseCNN):
             data_format=data_format,
             pre_trained=False,
             name=name,
+            batch_norm=batch_norm,
         )
         if pre_trained:
+            if not batch_norm:
+                raise NotImplementedError(
+                    "Unable to load pre-trained models with no BatchNorm")
             model_url, model_hash = MODEL_URLS["gsc_super_sparse_cnn"]
             file_name = "gsc_super_sparse_cnn-{:.8}".format(model_hash)
             archive_path = get_file(
