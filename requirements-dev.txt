@@ -31,7 +31,7 @@ black
 docformatter
 
 # Format imports
-isort
+isort==4.3.21
 
 # Python Linting tools
 flake8
